@@ -166,11 +166,8 @@ gfx.point(center);
     }
 }
 
-//popMatrix();
-for (Particle  s : particleList){
 
-	s.display(); 
-}
+
 fill(255);
 text("framerate:  " + frameRate, 20, 480);
 println("framerate  : "  + frameRate);
@@ -293,7 +290,7 @@ else displayOn = true;
 }
 public void initPhysics()  {
 physics.setWorldBounds(new AABB(new Vec3D(),new Vec3D(DIM,DIM,DIM)));
-physics2.setWorldBounds(new AABB(new Vec3D(), new Vec3D(DIM, DIM, DIM))); 
+//physics2.setWorldBounds(new AABB(new Vec3D(), new Vec3D(DIM, DIM, DIM))); 
 
 
 centers.add(new Vec3D(-400, -100, -150)); 

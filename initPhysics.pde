@@ -1,6 +1,6 @@
 void initPhysics()  {
 physics.setWorldBounds(new AABB(new Vec3D(),new Vec3D(DIM,DIM,DIM)));
-physics2.setWorldBounds(new AABB(new Vec3D(), new Vec3D(DIM, DIM, DIM))); 
+//physics2.setWorldBounds(new AABB(new Vec3D(), new Vec3D(DIM, DIM, DIM))); 
 
 
 centers.add(new Vec3D(-400, -100, -150)); 

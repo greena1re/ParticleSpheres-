@@ -137,11 +137,8 @@ gfx.point(center);
     }
 }
 
-//popMatrix();
-for (Particle  s : particleList){
 
-	s.display(); 
-}
+
 fill(255);
 text("framerate:  " + frameRate, 20, 480);
 println("framerate  : "  + frameRate);
