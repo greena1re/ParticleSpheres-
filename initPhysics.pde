@@ -1,7 +1,7 @@
 void initPhysics()  {
 
 
-physics.setWorldBounds(new AABB(new Vec3D(),new Vec3D(DIM,DIM,DIM)));
+//physics.setWorldBounds(new AABB(new Vec3D(),new Vec3D(DIM,DIM,DIM)));
 //physics2.setWorldBounds(new AABB(new Vec3D(), new Vec3D(DIM, DIM, DIM))); 
 gravity = new GravityBehavior(new Vec3D(0, 1, 0)); 
 
@@ -9,28 +9,28 @@ centerMovements[0].trigger();
 centerMovements[1].trigger();
 centerMovements[2].trigger();
 centerMove = new Vec3D(centerMovements[0].getValuef(), centerMovements[1].getValuef(), centerMovements[2].getValuef());
-centers.add(new Vec3D(-400, -100, -150)); 
-centers.add(new Vec3D(-300, 100 , -50));
-centers.add(new Vec3D(0, 100, -600));
-centers.add(new Vec3D(600, 400 , -150));
-centers.add(new Vec3D(200, -200, -300));
-centers.add(new Vec3D(150, 600,  -500));
-centers.add(new Vec3D(-700, 700, -300));
+centers.add(new Vec3D(0, 0, 0)); 
+centers.add(new Vec3D(-1500, -500 , -50));
+centers.add(new Vec3D(1500, 500, -300));
+centers.add(new Vec3D(600, 400 , -1200));
+centers.add(new Vec3D(2000, 700, -600));
+centers.add(new Vec3D(-2000, -700,  -500));
+centers.add(new Vec3D(-600, 700, -800));
 
 repulse = new AttractionBehavior(new Vec3D(0,0,0), 300,  -.1, .2);
-attract0 = new AttractionBehavior(centers.get(0).add(centerMove), 1000, .1);
-attract1 = new AttractionBehavior(centers.get(1).add(centerMove), 1000, .05);
-attract2 = new AttractionBehavior(centers.get(2).add(centerMove), 1000, .1);
-attract3 = new AttractionBehavior(centers.get(3).add(centerMove), 1000, .1);
-attract4 = new AttractionBehavior(centers.get(4).add(centerMove), 300, .1);
+// attract0 = new AttractionBehavior(centers.get(0).add(centerMove), 1000, .1);
+// attract1 = new AttractionBehavior(centers.get(1).add(centerMove), 1000, .05);
+// attract2 = new AttractionBehavior(centers.get(2).add(centerMove), 1000, .1);
+// attract3 = new AttractionBehavior(centers.get(3).add(centerMove), 1000, .1);
+// attract4 = new AttractionBehavior(centers.get(4).add(centerMove), 300, .1);
 
 physics.addBehavior(gravity); 
 physics.addBehavior(repulse);
-physics.addBehavior(attract0);
-physics.addBehavior(attract1);
-physics.addBehavior(attract2);
-physics.addBehavior(attract3);
-physics.addBehavior(attract4);
+// physics.addBehavior(attract0);
+// physics.addBehavior(attract1);
+// physics.addBehavior(attract2);
+// physics.addBehavior(attract3);
+// physics.addBehavior(attract4);
 
 for (int i = 0; i < centers.size(); i++){
 if (i < 5){
@@ -38,7 +38,7 @@ if (i < 5){
 
  }
  else {
-   secondaryconstraints.add(new SphereConstraint(centers.get(i), 40, SphereConstraint.OUTSIDE));
+   secondaryConstraints.add(new SphereConstraint(centers.get(i), 40, SphereConstraint.OUTSIDE));
    physics.addBehavior(new AttractionBehavior(centers.get(i), 300, .1, .05));
    physics.addBehavior(new AttractionBehavior(centers.get(i).add(centerMove) , 400, .1, .05 ) );  
    physics.addBehavior(new AttractionBehavior( (centers.get(i).add(new Vec3D(random(-100,100), random(-100,100), random(-100,100)))).getNormalizedTo(random(100, 300) ), 300, .1, .1) );
@@ -69,17 +69,20 @@ for (int i = 0; i<NUM_PARTICLES; i++){
      }
       else if (i <4*NUM_PARTICLES/5) { 
      particleList.add(new Particle( new Vec3D(centers.get(5).x + random(-200,200), centers.get(5).y + random(-200,200), centers.get(5).z + random(-200,200)).getNormalizedTo(random(20, 80) )));
-     particleList.get(i).addConstraint(secondaryconstraints.get(0));
+     particleList.get(i).addConstraint(secondaryConstraints.get(0));
    ;  }
      else { 
      particleList.add(new Particle( new Vec3D(centers.get(6).x + random(-200,200), centers.get(6).y + random(-200,200), centers.get(6).z + random(-200,200)).getNormalizedTo(random(20, 80) )));
-     particleList.get(i).addConstraint(secondaryconstraints.get(1)); 
+     particleList.get(i).addConstraint(secondaryConstraints.get(1)); 
    ;  }
   
-  //boids.add(new Boid(new Vec3D(random(-300,300), random(-300,300), random(-400, -100) ), 3, .5, 25, 50)); 
 
 
   };  
+
+  for (int i =0; i < NUM_BOIDS ; i++ ) {
+  // boids.add(new Boid(new Vec3D(random(-300,300), random(-300,300), random(-400, 0) ), 10, 5, 25, 50)); 
+  }
 // for (Boid b : boids) {
 //   	physics.addParticle((VerletParticle) b); 
 //   }
@@ -91,9 +94,17 @@ physics.addParticle((VerletParticle) particle);
 particle.trailsVisible= true; 
 }
 
-boundingSphere = new SphereConstraint(new Vec3D(0,0,0), 600, SphereConstraint.INSIDE);
-constraints.add(boundingSphere);
-physics.addConstraintToAll(boundingSphere, physics.particles); 
+boundaryConstraints.add(new SphereConstraint(centers.get(0), sphereRadius, SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(1), sphereRadius+100, SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(2), sphereRadius+200, SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(3), sphereRadius+300, SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(4), sphereRadius , SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(5), sphereRadius , SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(6), sphereRadius-100, SphereConstraint.INSIDE));
+//boundaryConstraints.add(new SphereConstraint(centers.get(7), sphereRadius, SphereConstraint.INSIDE));
+
+//constraints.add(boundingSphere);
+//physics.addConstraintToAll(boundaryConstraints.get(0), physics.particles); 
 
 for (ParticleConstraint p : constraints) {
 	physics.addConstraintToAll(p, physics.particles);
@@ -110,11 +121,14 @@ for (ParticleConstraint p : constraints) {
   grav.rotateY(mouseX*0.01);
   gravity.setForce(grav.scaleSelf(2));
   int numP=physics.particles.size();
+
+  for (int j = 0 ; j<boundaryConstraints.size(); j++){
+      
   if (random(1)<0.8 && numP<NUM_SPRINGS) {
-    Particle p=new Particle(new Vec3D(random(-1,1)*10,-DIM,random(-1,1)*10));
-  //   if (useBoundary)
-     p.addConstraint(boundingSphere);
+     Particle p=new Particle(new Vec3D(centers.get(j).x*random(-1,1)*20,centers.get(j).y,centers.get(j).z*random(-1,1)*20));
+     p.addConstraint(boundaryConstraints.get(j));
      physics.addParticle(p);
+     particleList.add(p); 
   // }
   if (numP>10 && physics.springs.size()<1400) {
     for(int i=0; i<60; i++) {
@@ -132,8 +146,9 @@ for (ParticleConstraint p : constraints) {
   for(Iterator i=physics.springs.iterator(); i.hasNext();) {
     VerletSpring s=(VerletSpring)i.next();
     s.setRestLength(random(0.9,1.1)*len);
-        }
+          }
   //physics.update();
+       }
       } 
     }
  

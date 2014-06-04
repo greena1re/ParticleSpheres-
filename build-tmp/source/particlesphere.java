@@ -51,6 +51,7 @@ public class particlesphere extends PApplet {
  
 
 int NUM_PARTICLES = 1000;
+int NUM_BOIDS = 500; 
 int NUM_SPRINGS = 2000; 
 int NUM_CONSTRAINTS = 7; 
 int DEFAULT_COLOR = 0xff4400AA; 
@@ -58,7 +59,8 @@ int DEFAULT_STROKEWEIGHT=20;
 int NUM_COLORS=4; 
 int BOID_SIZE = 4; 
 int REST_LENGTH = 400; 
-int DIM  = 1000; 
+int DIM  = 1500; 
+int sphereRadius = 600; 
 float snapDist= 10*10; //minimum distance for dragging
 
 //global booleans
@@ -80,7 +82,9 @@ PeasyCam cam;
 //global arrays
 ArrayList<AttractionBehavior> attractors = new ArrayList<AttractionBehavior>(); 
 ArrayList<ParticleConstraint> constraints = new ArrayList<ParticleConstraint>(); 
-ArrayList<ParticleConstraint> secondaryconstraints = new ArrayList<ParticleConstraint>(); 
+ArrayList<ParticleConstraint> secondaryConstraints = new ArrayList<ParticleConstraint>(); 
+
+ArrayList<ParticleConstraint> boundaryConstraints = new ArrayList<ParticleConstraint>(); 
 ArrayList<Particle> particleList = new ArrayList<Particle>(); 
 ArrayList<Vec3D> centers = new ArrayList<Vec3D>(); 
 ArrayList<Boid> boids = new ArrayList<Boid>(); 
@@ -120,7 +124,7 @@ public void setup() {
 size(1500, 500, P3D);
 //colorMode(HSB, 360, 100, 100, 100);	
 
-cam = new PeasyCam(this, 200);
+cam = new PeasyCam(this, 400);
 
 gfx = new ToxiclibsSupport(this);
 physics = new VerletPhysics(); 
@@ -138,7 +142,7 @@ centerMovements[2]= new SinLFO(-300, 300, 6000);
 
 rgb = new SinLFO(0, 255, 2000);
 
-
+initGUI();
 initPhysics(); 
 
 
@@ -153,7 +157,10 @@ rgb.trigger();
  }
 
 public void draw() {
-  
+
+background(0xff010101); 
+gui(); 
+
 
  float x1off=0.f; 
  float y1off=0.f;
@@ -178,7 +185,7 @@ if (repulseClick.click()) {
 
 
 
-background(0xff010101); 
+
 //background(#0A0096);
 physics.update(); 
 updateParticles(); 
@@ -208,23 +215,27 @@ gfx.point(b.getAttractor());
   spotLight(60, 0, 200, 1000, 500, 0, -1, -1, -1, 60, 2); 
  if (particlesVisible)
 {   colorMode(RGB);
-	for (Boid p : boids)  {
-
- //   flowField.applyForce((VerletParticle) p);
-	//  p.run(boids); 
+	for (Boid p : boids)  { 
+    if (p.distanceToSquared(centers.get(0)) > 1000) {
+      p.addForce(new Vec3D(-p.x, -p.y, -p.z).getNormalizedTo(2)); 
+    }
+   // flowField.applyForce(p);
+	 p.run(boids); 
 }
-for (VerletParticle particle : physics.particles) {
+for (Particle particle : particleList) {
    strokeWeight(10);
-	 stroke(0xff0000FF, 80); 
+  //float alphaP = map(particle.z, 0, 1500, 70, 100); 
+	 // stroke(#0000FF, 100); 
    flowField.applyForce(particle); 
+  //specular(50);
+	// gfx.point((Vec3D)particle);
+	
 
-	gfx.point((Vec3D)particle);
-	 //specular(); 
 	 // if (abs(p.x)>2*width/3 || abs(p.y)> 2*height/3){
 	 // 	p.isActive=false; 
 	 // } 
 	
-	//particle.display(); 
+	particle.display(); 
     }
 }
 
@@ -236,15 +247,27 @@ if (flowFieldVisible){
 
 
 
-
 if  ( framerateVisible){
 fill(255);
 text("framerate:  " + frameRate, 20, 480);
 println("framerate  : "  + frameRate); 
   }
+
 }
 
 public void keyPressed()  {
+
+  if (key == CODED){
+  int count = 0; 
+  if (keyCode == UP) {  
+      physics.removeConstraintFromAll(boundaryConstraints.get(count), physics.particles); 
+      count++; 
+    }
+  if (key == DOWN){
+       physics.addConstraintToAll(boundaryConstraints.get(count), physics.particles);
+       count--; 
+    }
+  }
   
 if (key == 'c')  {
       if (constraintsVisible) constraintsVisible = !constraintsVisible; 
@@ -411,10 +434,13 @@ class Boid extends VerletParticle {
 
   public void render() {
     // use the color matrix to transform position into RGB values 
+    strokeWeight(10); 
     Vec3D col=colorMatrix.applyTo(loc);
     fill(col.x,col.y,col.z);
-    gfx.sphere(new Sphere(loc, BOID_SIZE), 5);
-    //gfx.cone(new Cone(loc,vel,0,BOID_SIZE,BOID_SIZE*4),5,false);
+    stroke(0xff0000FF, 100); 
+    gfx.point(loc); 
+   // gfx.sphere(new Sphere(loc, BOID_SIZE), 5);
+ //   gfx.cone(new Cone(loc,vel,0,BOID_SIZE,BOID_SIZE*4),5,false);
   }
 
   // Wraparound
@@ -638,23 +664,38 @@ float prevMag;
      //line(this.x, this.y, this.z, this.previousPosition.x, this.previousPosition.y, this.previousPosition.z);
      //this.line= new Line3D((Vec3D) this, this.previousPosition);
       //gfx.line(this.line);
-     //gfx.point((Vec3D)this.sub(this.previousPosition) );
+  //   gfx.point((Vec3D)this.sub(this.previousPosition).scale(.1) );
 
           }
         }
       else { noStroke(); }
       }
     }
-ControlP5 ui; 
+ControlP5 ui;
 
-public void toggleUI() {
+public void initGUI() {
 
-if (displayOn)
- { displayOn = !displayOn;} 
-else displayOn = true;
+	fill(0xffFFFFFF); 
+  ui = new ControlP5(this);
+  ui.setAutoDraw(false);
+  ui.addSlider("ConstraintSize",300,1200,sphereRadius,50,50,100,14).setLabel("ConstraintSize");
+  ui.addSlider("Num particles",100,500,NUM_PARTICLES,50,150,100,14).setLabel("Num Particles");
 
 
+   ui.addToggle("showPhysics",particlesVisible,20,60,14,14).setLabel("show particles");
+  // ui.addToggle("isWireFrame",isWireFrame,20,100,14,14).setLabel("wireframe");
+  // ui.addToggle("isClosed",isClosed,20,140,14,14).setLabel("closed mesh");
+  // ui.addToggle("toggleBoundary",useBoundary,20,180,14,14).setLabel("use boundary");
 
+  // ui.addBang("initPhysics",20,240,28,28).setLabel("restart");
+}
+
+public void gui() {
+  hint(DISABLE_DEPTH_TEST);
+  cam.beginHUD();
+  ui.draw();
+  cam.endHUD();
+  hint(ENABLE_DEPTH_TEST);
 }
 class VectorField {
 
@@ -734,7 +775,7 @@ public void drawArrow(Vec3D fieldLine, float len, float theta, float phi)  {
 public void initPhysics()  {
 
 
-physics.setWorldBounds(new AABB(new Vec3D(),new Vec3D(DIM,DIM,DIM)));
+//physics.setWorldBounds(new AABB(new Vec3D(),new Vec3D(DIM,DIM,DIM)));
 //physics2.setWorldBounds(new AABB(new Vec3D(), new Vec3D(DIM, DIM, DIM))); 
 gravity = new GravityBehavior(new Vec3D(0, 1, 0)); 
 
@@ -742,28 +783,28 @@ centerMovements[0].trigger();
 centerMovements[1].trigger();
 centerMovements[2].trigger();
 centerMove = new Vec3D(centerMovements[0].getValuef(), centerMovements[1].getValuef(), centerMovements[2].getValuef());
-centers.add(new Vec3D(-400, -100, -150)); 
-centers.add(new Vec3D(-300, 100 , -50));
-centers.add(new Vec3D(0, 100, -600));
-centers.add(new Vec3D(600, 400 , -150));
-centers.add(new Vec3D(200, -200, -300));
-centers.add(new Vec3D(150, 600,  -500));
-centers.add(new Vec3D(-700, 700, -300));
+centers.add(new Vec3D(0, 0, 0)); 
+centers.add(new Vec3D(-1500, -500 , -50));
+centers.add(new Vec3D(1500, 500, -300));
+centers.add(new Vec3D(600, 400 , -1200));
+centers.add(new Vec3D(2000, 700, -600));
+centers.add(new Vec3D(-2000, -700,  -500));
+centers.add(new Vec3D(-600, 700, -800));
 
 repulse = new AttractionBehavior(new Vec3D(0,0,0), 300,  -.1f, .2f);
-attract0 = new AttractionBehavior(centers.get(0).add(centerMove), 1000, .1f);
-attract1 = new AttractionBehavior(centers.get(1).add(centerMove), 1000, .05f);
-attract2 = new AttractionBehavior(centers.get(2).add(centerMove), 1000, .1f);
-attract3 = new AttractionBehavior(centers.get(3).add(centerMove), 1000, .1f);
-attract4 = new AttractionBehavior(centers.get(4).add(centerMove), 300, .1f);
+// attract0 = new AttractionBehavior(centers.get(0).add(centerMove), 1000, .1);
+// attract1 = new AttractionBehavior(centers.get(1).add(centerMove), 1000, .05);
+// attract2 = new AttractionBehavior(centers.get(2).add(centerMove), 1000, .1);
+// attract3 = new AttractionBehavior(centers.get(3).add(centerMove), 1000, .1);
+// attract4 = new AttractionBehavior(centers.get(4).add(centerMove), 300, .1);
 
 physics.addBehavior(gravity); 
 physics.addBehavior(repulse);
-physics.addBehavior(attract0);
-physics.addBehavior(attract1);
-physics.addBehavior(attract2);
-physics.addBehavior(attract3);
-physics.addBehavior(attract4);
+// physics.addBehavior(attract0);
+// physics.addBehavior(attract1);
+// physics.addBehavior(attract2);
+// physics.addBehavior(attract3);
+// physics.addBehavior(attract4);
 
 for (int i = 0; i < centers.size(); i++){
 if (i < 5){
@@ -771,7 +812,7 @@ if (i < 5){
 
  }
  else {
-   secondaryconstraints.add(new SphereConstraint(centers.get(i), 40, SphereConstraint.OUTSIDE));
+   secondaryConstraints.add(new SphereConstraint(centers.get(i), 40, SphereConstraint.OUTSIDE));
    physics.addBehavior(new AttractionBehavior(centers.get(i), 300, .1f, .05f));
    physics.addBehavior(new AttractionBehavior(centers.get(i).add(centerMove) , 400, .1f, .05f ) );  
    physics.addBehavior(new AttractionBehavior( (centers.get(i).add(new Vec3D(random(-100,100), random(-100,100), random(-100,100)))).getNormalizedTo(random(100, 300) ), 300, .1f, .1f) );
@@ -802,17 +843,20 @@ for (int i = 0; i<NUM_PARTICLES; i++){
      }
       else if (i <4*NUM_PARTICLES/5) { 
      particleList.add(new Particle( new Vec3D(centers.get(5).x + random(-200,200), centers.get(5).y + random(-200,200), centers.get(5).z + random(-200,200)).getNormalizedTo(random(20, 80) )));
-     particleList.get(i).addConstraint(secondaryconstraints.get(0));
+     particleList.get(i).addConstraint(secondaryConstraints.get(0));
    ;  }
      else { 
      particleList.add(new Particle( new Vec3D(centers.get(6).x + random(-200,200), centers.get(6).y + random(-200,200), centers.get(6).z + random(-200,200)).getNormalizedTo(random(20, 80) )));
-     particleList.get(i).addConstraint(secondaryconstraints.get(1)); 
+     particleList.get(i).addConstraint(secondaryConstraints.get(1)); 
    ;  }
   
-  //boids.add(new Boid(new Vec3D(random(-300,300), random(-300,300), random(-400, -100) ), 3, .5, 25, 50)); 
 
 
   };  
+
+  for (int i =0; i < NUM_BOIDS ; i++ ) {
+  // boids.add(new Boid(new Vec3D(random(-300,300), random(-300,300), random(-400, 0) ), 10, 5, 25, 50)); 
+  }
 // for (Boid b : boids) {
 //   	physics.addParticle((VerletParticle) b); 
 //   }
@@ -824,9 +868,17 @@ physics.addParticle((VerletParticle) particle);
 particle.trailsVisible= true; 
 }
 
-boundingSphere = new SphereConstraint(new Vec3D(0,0,0), 600, SphereConstraint.INSIDE);
-constraints.add(boundingSphere);
-physics.addConstraintToAll(boundingSphere, physics.particles); 
+boundaryConstraints.add(new SphereConstraint(centers.get(0), sphereRadius, SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(1), sphereRadius+100, SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(2), sphereRadius+200, SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(3), sphereRadius+300, SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(4), sphereRadius , SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(5), sphereRadius , SphereConstraint.INSIDE));
+boundaryConstraints.add(new SphereConstraint(centers.get(6), sphereRadius-100, SphereConstraint.INSIDE));
+//boundaryConstraints.add(new SphereConstraint(centers.get(7), sphereRadius, SphereConstraint.INSIDE));
+
+//constraints.add(boundingSphere);
+//physics.addConstraintToAll(boundaryConstraints.get(0), physics.particles); 
 
 for (ParticleConstraint p : constraints) {
 	physics.addConstraintToAll(p, physics.particles);
@@ -843,11 +895,14 @@ for (ParticleConstraint p : constraints) {
   grav.rotateY(mouseX*0.01f);
   gravity.setForce(grav.scaleSelf(2));
   int numP=physics.particles.size();
+
+  for (int j = 0 ; j<boundaryConstraints.size(); j++){
+      
   if (random(1)<0.8f && numP<NUM_SPRINGS) {
-    Particle p=new Particle(new Vec3D(random(-1,1)*10,-DIM,random(-1,1)*10));
-  //   if (useBoundary)
-     p.addConstraint(boundingSphere);
+     Particle p=new Particle(new Vec3D(centers.get(j).x*random(-1,1)*20,centers.get(j).y,centers.get(j).z*random(-1,1)*20));
+     p.addConstraint(boundaryConstraints.get(j));
      physics.addParticle(p);
+     particleList.add(p); 
   // }
   if (numP>10 && physics.springs.size()<1400) {
     for(int i=0; i<60; i++) {
@@ -865,8 +920,9 @@ for (ParticleConstraint p : constraints) {
   for(Iterator i=physics.springs.iterator(); i.hasNext();) {
     VerletSpring s=(VerletSpring)i.next();
     s.setRestLength(random(0.9f,1.1f)*len);
-        }
+          }
   //physics.update();
+       }
       } 
     }
  

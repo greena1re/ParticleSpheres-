@@ -80,7 +80,7 @@ float prevMag;
      //line(this.x, this.y, this.z, this.previousPosition.x, this.previousPosition.y, this.previousPosition.z);
      //this.line= new Line3D((Vec3D) this, this.previousPosition);
       //gfx.line(this.line);
-     //gfx.point((Vec3D)this.sub(this.previousPosition) );
+  //   gfx.point((Vec3D)this.sub(this.previousPosition).scale(.1) );
 
           }
         }

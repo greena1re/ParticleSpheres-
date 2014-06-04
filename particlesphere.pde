@@ -18,6 +18,7 @@ import controlP5.*;
 import java.util.Iterator; 
 
 int NUM_PARTICLES = 1000;
+int NUM_BOIDS = 500; 
 int NUM_SPRINGS = 2000; 
 int NUM_CONSTRAINTS = 7; 
 color DEFAULT_COLOR = #4400AA; 
@@ -25,7 +26,8 @@ int DEFAULT_STROKEWEIGHT=20;
 int NUM_COLORS=4; 
 int BOID_SIZE = 4; 
 int REST_LENGTH = 400; 
-int DIM  = 1000; 
+int DIM  = 1500; 
+int sphereRadius = 600; 
 float snapDist= 10*10; //minimum distance for dragging
 
 //global booleans
@@ -47,7 +49,9 @@ PeasyCam cam;
 //global arrays
 ArrayList<AttractionBehavior> attractors = new ArrayList<AttractionBehavior>(); 
 ArrayList<ParticleConstraint> constraints = new ArrayList<ParticleConstraint>(); 
-ArrayList<ParticleConstraint> secondaryconstraints = new ArrayList<ParticleConstraint>(); 
+ArrayList<ParticleConstraint> secondaryConstraints = new ArrayList<ParticleConstraint>(); 
+
+ArrayList<ParticleConstraint> boundaryConstraints = new ArrayList<ParticleConstraint>(); 
 ArrayList<Particle> particleList = new ArrayList<Particle>(); 
 ArrayList<Vec3D> centers = new ArrayList<Vec3D>(); 
 ArrayList<Boid> boids = new ArrayList<Boid>(); 
@@ -87,7 +91,7 @@ void setup() {
 size(1500, 500, P3D);
 //colorMode(HSB, 360, 100, 100, 100);	
 
-cam = new PeasyCam(this, 200);
+cam = new PeasyCam(this, 400);
 
 gfx = new ToxiclibsSupport(this);
 physics = new VerletPhysics(); 
@@ -105,7 +109,7 @@ centerMovements[2]= new SinLFO(-300, 300, 6000);
 
 rgb = new SinLFO(0, 255, 2000);
 
-
+initGUI();
 initPhysics(); 
 
 
@@ -120,7 +124,10 @@ rgb.trigger();
  }
 
 void draw() {
-  
+
+background(#010101); 
+gui(); 
+
 
  float x1off=0.; 
  float y1off=0.;
@@ -145,7 +152,7 @@ if (repulseClick.click()) {
 
 
 
-background(#010101); 
+
 //background(#0A0096);
 physics.update(); 
 updateParticles(); 
@@ -175,23 +182,27 @@ gfx.point(b.getAttractor());
   spotLight(60, 0, 200, 1000, 500, 0, -1, -1, -1, 60, 2); 
  if (particlesVisible)
 {   colorMode(RGB);
-	for (Boid p : boids)  {
-
- //   flowField.applyForce((VerletParticle) p);
-	//  p.run(boids); 
+	for (Boid p : boids)  { 
+    if (p.distanceToSquared(centers.get(0)) > 1000) {
+      p.addForce(new Vec3D(-p.x, -p.y, -p.z).getNormalizedTo(2)); 
+    }
+   // flowField.applyForce(p);
+	 p.run(boids); 
 }
-for (VerletParticle particle : physics.particles) {
+for (Particle particle : particleList) {
    strokeWeight(10);
-	 stroke(#0000FF, 80); 
+  //float alphaP = map(particle.z, 0, 1500, 70, 100); 
+	 // stroke(#0000FF, 100); 
    flowField.applyForce(particle); 
+  //specular(50);
+	// gfx.point((Vec3D)particle);
+	
 
-	gfx.point((Vec3D)particle);
-	 //specular(); 
 	 // if (abs(p.x)>2*width/3 || abs(p.y)> 2*height/3){
 	 // 	p.isActive=false; 
 	 // } 
 	
-	//particle.display(); 
+	particle.display(); 
     }
 }
 
@@ -203,15 +214,27 @@ if (flowFieldVisible){
 
 
 
-
 if  ( framerateVisible){
 fill(255);
 text("framerate:  " + frameRate, 20, 480);
 println("framerate  : "  + frameRate); 
   }
+
 }
 
 void keyPressed()  {
+
+  if (key == CODED){
+  int count = 0; 
+  if (keyCode == UP) {  
+      physics.removeConstraintFromAll(boundaryConstraints.get(count), physics.particles); 
+      count++; 
+    }
+  if (key == DOWN){
+       physics.addConstraintToAll(boundaryConstraints.get(count), physics.particles);
+       count--; 
+    }
+  }
   
 if (key == 'c')  {
       if (constraintsVisible) constraintsVisible = !constraintsVisible; 

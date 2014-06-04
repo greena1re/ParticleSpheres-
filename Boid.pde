@@ -86,10 +86,13 @@ class Boid extends VerletParticle {
 
   void render() {
     // use the color matrix to transform position into RGB values 
+    strokeWeight(10); 
     Vec3D col=colorMatrix.applyTo(loc);
     fill(col.x,col.y,col.z);
-    gfx.sphere(new Sphere(loc, BOID_SIZE), 5);
-    //gfx.cone(new Cone(loc,vel,0,BOID_SIZE,BOID_SIZE*4),5,false);
+    stroke(#0000FF, 100); 
+    gfx.point(loc); 
+   // gfx.sphere(new Sphere(loc, BOID_SIZE), 5);
+ //   gfx.cone(new Cone(loc,vel,0,BOID_SIZE,BOID_SIZE*4),5,false);
   }
 
   // Wraparound
